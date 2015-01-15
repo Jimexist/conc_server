@@ -12,15 +12,19 @@ int main(int argc, char **argv) {
         fprintf(stderr, "usage: %s <port>\n", argv[0]);
         exit(1);
     }
+    
+    Signal(SIGPIPE, SIG_IGN);
+    
     const int port = atoi(argv[1]);
     const int listenfd = Open_listenfd(port);
     struct sockaddr_in clientaddr;
+    pthread_t thread;
 
     while (1) {
         socklen_t clientlen = sizeof(clientaddr);
-        const int connfd = Accept(listenfd, (SA *)&clientaddr, &clientlen);
-        handle_request(connfd);
-        Close(connfd);
+        int *pconnfd = (int *)Malloc(sizeof(int));
+        *pconnfd = Accept(listenfd, (SA *)&clientaddr, &clientlen);
+        Pthread_create(&thread, NULL, (void *)&handle_request, (void *)pconnfd);
     }
 }
 /* $end tinymain */
@@ -29,7 +33,9 @@ int main(int argc, char **argv) {
  * handle_request - handle one HTTP request/response transaction
  */
 /* $begin handle_request */
-void handle_request(int fd) {
+void handle_request(void *ptr) {
+    Pthread_detach(Pthread_self());
+    const int fd = *((int *)ptr);
     struct stat sbuf;
     char buf[MAXLINE], method[MAXLINE], uri[MAXLINE], version[MAXLINE];
     char filename[MAXLINE], cgiargs[MAXLINE];
@@ -39,37 +45,40 @@ void handle_request(int fd) {
     Rio_readinitb(&rio, fd);
     Rio_readlineb(&rio, buf, MAXLINE);
     sscanf(buf, "%s %s %s", method, uri, version);
+    
     if (strcasecmp(method, "GET")) {
         clienterror(fd, method, "501", "Not Implemented",
                     "Tiny does not implement this method");
-        return;
-    }
-    read_requesthdrs(&rio);
+    } else {
+        read_requesthdrs(&rio);
+        /* Parse URI from GET request */
+        const int is_static = parse_uri(uri, filename, cgiargs);
 
-    /* Parse URI from GET request */
-    const int is_static = parse_uri(uri, filename, cgiargs);
-
-    if (stat(filename, &sbuf) < 0) {
-        clienterror(fd, filename, "404", "Not found",
-                    "Tiny couldn't find this file");
-        return;
-    }
-
-    if (is_static) { /* Serve static content */
-        if (!(S_ISREG(sbuf.st_mode)) || !(S_IRUSR & sbuf.st_mode)) {
-            clienterror(fd, filename, "403", "Forbidden",
-                        "Tiny couldn't read the file");
-            return;
+        if (stat(filename, &sbuf) < 0) {
+            clienterror(fd, filename, "404", "Not found",
+                        "Tiny couldn't find this file");
+        } else {
+            if (is_static) { /* Serve static content */
+                if (!(S_ISREG(sbuf.st_mode)) || !(S_IRUSR & sbuf.st_mode)) {
+                    clienterror(fd, filename, "403", "Forbidden",
+                                "Tiny couldn't read the file");
+                    return;
+                } else {
+                    serve_static(fd, filename, sbuf.st_size);
+                }
+            } else { /* Serve dynamic content */
+                if (!(S_ISREG(sbuf.st_mode)) || !(S_IXUSR & sbuf.st_mode)) {
+                    clienterror(fd, filename, "403", "Forbidden",
+                                "Tiny couldn't run the CGI program");
+                } else {
+                    serve_dynamic(fd, filename, cgiargs);
+                }
+            }
         }
-        serve_static(fd, filename, sbuf.st_size);
-    } else { /* Serve dynamic content */
-        if (!(S_ISREG(sbuf.st_mode)) || !(S_IXUSR & sbuf.st_mode)) {
-            clienterror(fd, filename, "403", "Forbidden",
-                        "Tiny couldn't run the CGI program");
-            return;
-        }
-        serve_dynamic(fd, filename, cgiargs);
     }
+    /* have to close the file descriptor from the thread */
+    Close(fd);
+    Free(ptr);
 }
 /* $end handle_request */
 
@@ -83,7 +92,6 @@ void read_requesthdrs(rio_t *rp) {
     Rio_readlineb(rp, buf, MAXLINE);
     while (strcmp(buf, "\r\n")) {
         Rio_readlineb(rp, buf, MAXLINE);
-        printf("%s", buf);
     }
     return;
 }
