@@ -1,19 +1,20 @@
-/* $begin tinymain */
+/* $begin baseline */
 /*
  * tiny.c - A simple, iterative HTTP/1.0 Web server that uses the
  *     GET method to serve static and dynamic content.
  */
-#include "tiny.h"
+#include "baseline.h"
 
 int main(int argc, char **argv) {
+    /* ignore the sigpipe */
     Signal(SIGPIPE, SIG_IGN);
-    
+
     /* Check command line args */
     if (argc != 2) {
         fprintf(stderr, "usage: %s <port>\n", argv[0]);
         exit(1);
     }
-    
+
     const int port = atoi(argv[1]);
     const int listenfd = Open_listenfd(port);
     struct sockaddr_in clientaddr;
@@ -21,9 +22,10 @@ int main(int argc, char **argv) {
 
     while (1) {
         socklen_t clientlen = sizeof(clientaddr);
-        int *pconnfd = (int *)Malloc(sizeof(int));
-        *pconnfd = Accept(listenfd, (SA *)&clientaddr, &clientlen);
-        Pthread_create(&thread, NULL, (void *)&handle_request, (void *)pconnfd);
+        int *pconnfd = (int *) Malloc(sizeof(int));
+        *pconnfd = Accept(listenfd, (SA *) &clientaddr, &clientlen);
+        Pthread_create(&thread, NULL, (void *) &handle_request,
+                       (void *) pconnfd);
     }
 }
 /* $end tinymain */
@@ -33,8 +35,9 @@ int main(int argc, char **argv) {
  */
 /* $begin handle_request */
 void handle_request(void *ptr) {
+    /* detach itself, and passing argument for the file descriptor */
     Pthread_detach(Pthread_self());
-    const int fd = *((int *)ptr);
+    const int fd = *((int *) ptr);
     Free(ptr);
     struct stat sbuf;
     char buf[MAXLINE], method[MAXLINE], uri[MAXLINE], version[MAXLINE];
@@ -45,7 +48,7 @@ void handle_request(void *ptr) {
     Rio_readinitb(&rio, fd);
     Rio_readlineb(&rio, buf, MAXLINE);
     sscanf(buf, "%s %s %s", method, uri, version);
-    
+
     if (strcasecmp(method, "GET")) {
         clienterror(fd, method, "501", "Not Implemented",
                     "Tiny does not implement this method");
@@ -75,7 +78,6 @@ void handle_request(void *ptr) {
             }
         }
     }
-    /* have to close the file descriptor from the thread */
     Close(fd);
 }
 /* $end handle_request */
@@ -91,7 +93,6 @@ void read_requesthdrs(rio_t *rp) {
     while (strcmp(buf, "\r\n")) {
         Rio_readlineb(rp, buf, MAXLINE);
     }
-    return;
 }
 /* $end read_requesthdrs */
 
@@ -210,11 +211,19 @@ void clienterror(int fd, char *cause, char *errnum, char *shortmsg,
 
     /* Print the HTTP response */
     sprintf(buf, "HTTP/1.0 %s %s\r\n", errnum, shortmsg);
-    rio_writen(fd, buf, strlen(buf));
+    if (-1 == rio_writen(fd, buf, strlen(buf))) {
+        return;
+    }
     sprintf(buf, "Content-type: text/html\r\n");
-    rio_writen(fd, buf, strlen(buf));
-    sprintf(buf, "Content-length: %d\r\n\r\n", (int)strlen(body));
-    rio_writen(fd, buf, strlen(buf));
-    rio_writen(fd, body, strlen(body));
+    if (-1 == rio_writen(fd, buf, strlen(buf))) {
+        return;
+    }
+    sprintf(buf, "Content-length: %d\r\n\r\n", (int) strlen(body));
+    if (-1 == rio_writen(fd, buf, strlen(buf))) {
+        return;
+    }
+    if (-1 == rio_writen(fd, body, strlen(body))) {
+        return;
+    }
 }
 /* $end clienterror */
