@@ -17,7 +17,7 @@ int main(int argc, char **argv) {
     struct sockaddr_in clientaddr;
 
     while (1) {
-        const int clientlen = sizeof(clientaddr);
+        socklen_t clientlen = sizeof(clientaddr);
         const int connfd = Accept(listenfd, (SA *)&clientaddr, &clientlen);
         handle_request(connfd);
         Close(connfd);
@@ -48,7 +48,7 @@ void handle_request(int fd) {
 
     /* Parse URI from GET request */
     const int is_static = parse_uri(uri, filename, cgiargs);
-    
+
     if (stat(filename, &sbuf) < 0) {
         clienterror(fd, filename, "404", "Not found",
                     "Tiny couldn't find this file");
