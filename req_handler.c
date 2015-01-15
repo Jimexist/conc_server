@@ -17,7 +17,7 @@ void clienterror(int fd, char *cause, char *errnum, char *shortmsg,
     sprintf(body, "%s<p>%s: %s\r\n", body, longmsg, cause);
     sprintf(body, "%s<hr><em>The Concurrent Web server</em>\r\n", body);
     sprintf(body, "%s</body></html>\r\n", body);
-    
+
     /* Print the HTTP response */
     sprintf(buf, "HTTP/1.0 %s %s\r\n", errnum, shortmsg);
     if (-1 == rio_writen(fd, buf, strlen(buf))) {
@@ -27,12 +27,12 @@ void clienterror(int fd, char *cause, char *errnum, char *shortmsg,
     if (-1 == rio_writen(fd, buf, strlen(buf))) {
         return;
     }
-    
+
     sprintf(buf, "Content-length: %d\r\n\r\n", (int) strlen(body));
     if (-1 == rio_writen(fd, buf, strlen(buf))) {
         return;
     }
-    
+
     if (-1 == rio_writen(fd, body, strlen(body))) {
         return;
     }
