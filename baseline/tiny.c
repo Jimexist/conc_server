@@ -6,14 +6,13 @@
 #include "tiny.h"
 
 int main(int argc, char **argv) {
-
+    Signal(SIGPIPE, SIG_IGN);
+    
     /* Check command line args */
     if (argc != 2) {
         fprintf(stderr, "usage: %s <port>\n", argv[0]);
         exit(1);
     }
-    
-    Signal(SIGPIPE, SIG_IGN);
     
     const int port = atoi(argv[1]);
     const int listenfd = Open_listenfd(port);
@@ -36,6 +35,7 @@ int main(int argc, char **argv) {
 void handle_request(void *ptr) {
     Pthread_detach(Pthread_self());
     const int fd = *((int *)ptr);
+    Free(ptr);
     struct stat sbuf;
     char buf[MAXLINE], method[MAXLINE], uri[MAXLINE], version[MAXLINE];
     char filename[MAXLINE], cgiargs[MAXLINE];
@@ -62,7 +62,6 @@ void handle_request(void *ptr) {
                 if (!(S_ISREG(sbuf.st_mode)) || !(S_IRUSR & sbuf.st_mode)) {
                     clienterror(fd, filename, "403", "Forbidden",
                                 "Tiny couldn't read the file");
-                    return;
                 } else {
                     serve_static(fd, filename, sbuf.st_size);
                 }
@@ -78,7 +77,6 @@ void handle_request(void *ptr) {
     }
     /* have to close the file descriptor from the thread */
     Close(fd);
-    Free(ptr);
 }
 /* $end handle_request */
 
