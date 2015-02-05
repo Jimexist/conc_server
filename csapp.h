@@ -18,7 +18,6 @@
 #include <errno.h>
 #include <math.h>
 #include <pthread.h>
-#include <semaphore.h>
 #include <sys/socket.h>
 #include <netdb.h>
 #include <netinet/in.h>
@@ -135,11 +134,6 @@ void Pthread_detach(pthread_t tid);
 void Pthread_exit(void *retval);
 pthread_t Pthread_self(void);
 void Pthread_once(pthread_once_t *once_control, void (*init_function)());
-
-/* POSIX semaphore wrappers */
-void Sem_init(sem_t *sem, int pshared, unsigned int value);
-void P(sem_t *sem);
-void V(sem_t *sem);
 
 /* Rio (Robust I/O) package */
 ssize_t rio_readn(int fd, void *usrbuf, size_t n);

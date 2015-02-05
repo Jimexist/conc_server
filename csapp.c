@@ -80,15 +80,10 @@ void Kill(pid_t pid, int signum) {
 
 void Pause() {
     (void) pause();
-    return;
 }
 
 unsigned int Sleep(unsigned int secs) {
-    unsigned int rc;
-
-    if ((rc = sleep(secs)) < 0)
-        unix_error("Sleep error");
-    return rc;
+    return sleep(secs);
 }
 
 unsigned int Alarm(unsigned int seconds) {
@@ -448,25 +443,6 @@ pthread_t Pthread_self(void) {
 
 void Pthread_once(pthread_once_t *once_control, void (*init_function)()) {
     pthread_once(once_control, init_function);
-}
-
-/*******************************
- * Wrappers for Posix semaphores
- *******************************/
-
-void Sem_init(sem_t *sem, int pshared, unsigned int value) {
-    if (sem_init(sem, pshared, value) < 0)
-        unix_error("Sem_init error");
-}
-
-void P(sem_t *sem) {
-    if (sem_wait(sem) < 0)
-        unix_error("P error");
-}
-
-void V(sem_t *sem) {
-    if (sem_post(sem) < 0)
-        unix_error("V error");
 }
 
 /*********************************************************************

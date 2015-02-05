@@ -1,10 +1,13 @@
-CC = gcc
-CFLAGS = -O2 -Wall -I ..
+CC=gcc
+CFLAGS=-O2 -Wall
+LDFLAGS=-Wall
 
-all: adder
+all: format adder
+	
+format:
+	\clang-format -i *.c
 
-adder: adder.c
-	$(CC) $(CFLAGS) -o adder adder.c
+adder: adder.o cgi_main.o
 
 clean:
-	rm -f adder *~
+	\rm -f adder *.o
