@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-O0 -g -Wall -Werror
+CFLAGS=-O0 -g -Wall -Werror -fPIC -pedantic
 LDFLAGS=-lpthread
 
 all: format baseline cgi

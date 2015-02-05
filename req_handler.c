@@ -103,13 +103,13 @@ void on_request(int clientfd) {
     /* note this will be freed in the client thread */
     int *pconnfd = (int *) Malloc(sizeof(int));
     *pconnfd = clientfd;
-    Pthread_create(&thread, NULL, (void *) &handle_request, (void *) pconnfd);
+    Pthread_create(&thread, NULL, &handle_request, pconnfd);
 }
 
 /*
  * handle_request - handle request in its own thread
  */
-void handle_request(void *ptr) {
+void *handle_request(void *ptr) {
     /* detach itself, and passing argument for the file descriptor */
     Pthread_detach(Pthread_self());
     const int fd = *((int *) ptr);
@@ -154,4 +154,5 @@ void handle_request(void *ptr) {
         }
     }
     Close(fd);
+    return NULL;
 }
