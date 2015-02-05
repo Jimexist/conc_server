@@ -1,18 +1,24 @@
 CC=gcc
 CFLAGS=-O0 -g -Wall -Werror -fPIC -pedantic
-LDFLAGS=-lpthread
+LDFLAGS=-Wall -Werror -fPIC -pedantic -lpthread
+COMMON=server.o csapp.o req_handler.o serve_static.o
 
-all: format baseline cgi
+all: format baseline optimized cgi
 
-format:
-	\clang-format -i *.{c,h}
+baseline: serve_dynamic_baseline.o $(COMMON)
+	$(CC) $(LDFLAGS) -o $@ $^
 
-baseline: baseline.o csapp.o req_handler.o
+optimized: serve_dynamic_optimized.o $(COMMON)
+	$(CC) $(LDFLAGS) -ldl -o $@ $^
 
 cgi:
 	(cd cgi-bin; make)
 
+.PHONY: clean format
+
 clean:
-	\rm -f *.o baseline *~
+	-rm -f *.o baseline optimized *~
 	(cd cgi-bin; make clean)
 
+format:
+	-clang-format -i *.{c,h}

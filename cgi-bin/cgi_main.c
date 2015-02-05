@@ -2,9 +2,10 @@
  * wrapper for all staticly linked cgi programs
  */
 #include <stdlib.h>
+#include <stdio.h>
 
-extern void func(char *);
+extern void func(int fd, const char *);
 
 int main(void) {
-    func(getenv("QUERY_STRING"));
+    func(fileno(stdout), getenv("QUERY_STRING"));
 }
