@@ -1,6 +1,6 @@
 CC=gcc
-CFLAGS=-O0 -g -Wall -Werror -fPIC -pedantic
-LDFLAGS=-Wall -Werror -fPIC -pedantic -lpthread
+CFLAGS=-O2 -Wall -Werror -fPIC -pedantic
+LDFLAGS=-O2 -Wall -Werror -fPIC -pedantic -lpthread
 COMMON=server.o csapp.o req_handler.o serve_static.o
 
 all: format baseline optimized cgi

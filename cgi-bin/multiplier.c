@@ -1,5 +1,5 @@
 /*
- * adder.c - a minimal CGI program that adds two numbers together
+ * multiplier.c - a minimal CGI program that multiplies two numbers together
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -27,11 +27,11 @@ void func(int fd, const char *buf) {
     parse(buf, &n1, &n2);
 
     char content[MAXLINE + 1];
-    snprintf(content, MAXLINE, "Welcome to add.com: ");
-    snprintf(content, MAXLINE, "%sTHE Internet addition portal.\r\n<p>",
+    snprintf(content, MAXLINE, "Welcome to multiply.com: ");
+    snprintf(content, MAXLINE, "%sTHE Internet multiplication portal.\r\n<p>",
              content);
-    snprintf(content, MAXLINE, "%sThe answer is: %d + %d = %d\r\n<p>", content,
-             n1, n2, n1 + n2);
+    snprintf(content, MAXLINE, "%sThe answer is: %d * %d = %d\r\n<p>", content,
+             n1, n2, n1 * n2);
     snprintf(content, MAXLINE, "%sThanks for visiting!\r\n", content);
 
     char result[MAXLINE + 1];
