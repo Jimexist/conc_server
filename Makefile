@@ -8,7 +8,7 @@ all: format baseline optimized cgi
 baseline: serve_dynamic_baseline.o $(COMMON)
 	$(CC) $(LDFLAGS) -o $@ $^
 
-optimized: serve_dynamic_optimized.o $(COMMON)
+optimized: serve_dynamic_optimized.o code_cache.o $(COMMON)
 	$(CC) $(LDFLAGS) -ldl -o $@ $^
 
 cgi:

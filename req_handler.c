@@ -1,7 +1,6 @@
 #include "req_handler.h"
-
-extern void serve_static(int fd, char *filename, int filesize);
-extern void serve_dynamic(int fd, char *filename, char *cgiargs);
+#include "serve_dynamic.h"
+#include "serve_static.h"
 
 /*
  * clienterror - returns an error message to the client

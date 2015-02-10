@@ -27,54 +27,75 @@ Cache *new_cache(size_t capacity) {
     return cache;
 }
 
-size_t size(Cache *cache) {
+size_t size(const Cache *cache) {
+    assert(cache);
     return cache->size;
 }
 
-int is_empty(Cache *cache) {
+size_t capacity(const Cache *cache) {
+    assert(cache);
+    return cache->capacity;
+}
+
+int is_empty(const Cache *cache) {
     return 0 == size(cache);
 }
 
-int is_full(Cache *cache) {
+int is_full(const Cache *cache) {
     return size(cache) == cache->capacity;
 }
 
-static int find_entry(Cache *cache, const char *key) {
-    if (is_full(cache)) {
-        long lru = cache->counter;
-        int retval = -1;
-        for (int i = 0; i < capacity; ++i) {
-            assert(cache->entries[i]);
-            if (0 == strcmp(key, cache->entries[i]->key)) {
-                retval = i;
-                break;
-            } else if (cache->entries[i]->last_access < lru) {
-                lru = cache->entries[i]->last_access;
-                retval = i;
-            }
+Entry *find_entry(Cache *cache, const char *key, int create) {
+    int lru_i = -1;
+    long lru = cache->counter; /* guanranteed to be biggest */
+
+    for (int i = 0; i < capacity(cache); ++i) {
+        if (cache->entries[i] == NULL) {
+            lru_i = i;
+        } else if (0 == strcmp(key, cache->entries[i]->key)) {
+            /* if found, early return */
+            cache->entries[i]->last_access = cache->counter++;
+            return cache->entries[i];
+        } else if (lru_i == -1 || (cache->entries[lru_i] != NULL &&
+                                   cache->entries[i]->last_access < lru)) {
+            lru = cache->entries[i]->last_access;
+            lru_i = i;
         }
-        assert(retval != -1);
-        assert(lru != cache->counter);
-        cache->entries[retval]->last_access = cache->counter++;
-        return retval;
-    } else {
-        for (int i = 0; i < capacity; ++i) {
-            if (cache->entries[i] == NULL) {
-                cache->entries[i] = (Entry *) malloc(sizeof(Entry));
-                cache->entries->last_access = cache->counter++;
-                cache->size++;
-                return i;
-            }
-        }
-        assert(0 && "unreachable");
-        return -1;
     }
+
+    assert(cache->entries[lru_i] == NULL ||
+           cache->entries[lru_i]->last_access < cache->counter);
+
+    /* not found, create or update */
+    if (cache->entries[lru_i] == NULL) {
+        if (create) {
+            cache->entries[lru_i] = (Entry *) malloc(sizeof(Entry));
+            cache->entries[lru_i]->key = NULL;
+            cache->entries[lru_i]->value = NULL;
+        } else {
+            return NULL;
+        }
+    }
+
+    Entry *entry = cache->entries[lru_i];
+    entry->key = (char *) realloc(entry->key, sizeof(char) * (strlen(key) + 1));
+    strcpy(entry->key, key);
+    entry->last_access = cache->counter++;
+    return entry;
 }
 
 void *put(Cache *cache, const char *key, void *value) {
-    const int i = find_entry(cache, key);
-    cache->entries[i].
+    Entry *entry = find_entry(cache, key, 1);
+    void *oldptr = entry->value;
+    entry->value = value;
+    return oldptr;
 }
 
 void *get(Cache *cache, const char *key) {
+    const Entry *entry = find_entry(cache, key, 0);
+    if (entry == NULL) {
+        return NULL;
+    } else {
+        return entry->value;
+    }
 }

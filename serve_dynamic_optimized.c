@@ -1,13 +1,19 @@
 #include <dlfcn.h>
+#include <pthread.h>
+#include "code_cache.h"
 #include "serve_dynamic.h"
 
 typedef void (*fp)(int fd, const char *);
 
 void serve_dynamic(int fd, char *filename, char *cgiargs) {
+
     char libname[MAXLINE + 1];
     if (!strstr(filename, "./cgi-bin/")) {
         return;
     }
+
+    static pthread_rwlock_t rwlock = PTHREAD_RWLOCK_INITIALIZER;
+    static Cache *cache = new_cache(5);
 
     snprintf(libname, MAXLINE, "./cgi-bin/lib%s.so", filename + 10);
     void *handle = dlopen(libname, RTLD_LAZY);
