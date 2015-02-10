@@ -1,7 +1,7 @@
 #include "req_handler.h"
 
 static Cache *code_cache = NULL;
-const static size_t cache_size = 5;
+const static size_t cache_size = 4;
 static pthread_rwlock_t rwlock = PTHREAD_RWLOCK_INITIALIZER;
 
 void server_init() {
