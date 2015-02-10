@@ -1,6 +1,19 @@
 #include "req_handler.h"
-#include "serve_dynamic.h"
-#include "serve_static.h"
+
+static Cache *code_cache = NULL;
+const static size_t cache_size = 5;
+static pthread_rwlock_t rwlock = PTHREAD_RWLOCK_INITIALIZER;
+
+void server_init() {
+    assert(!code_cache && "init can only happen once");
+    code_cache = new_cache(cache_size);
+}
+
+typedef struct {
+    int fd;
+    Cache *code_cache;
+    pthread_rwlock_t *rwlock;
+} Params;
 
 /*
  * clienterror - returns an error message to the client
@@ -100,9 +113,11 @@ void read_requesthdrs(rio_t *rp) {
 void on_request(int clientfd) {
     pthread_t thread;
     /* note this will be freed in the client thread */
-    int *pconnfd = (int *) Malloc(sizeof(int));
-    *pconnfd = clientfd;
-    Pthread_create(&thread, NULL, &handle_request, pconnfd);
+    Params *param = (Params *) Malloc(sizeof(Params));
+    param->fd = clientfd;
+    param->code_cache = code_cache;
+    param->rwlock = &rwlock;
+    Pthread_create(&thread, NULL, &handle_request, param);
 }
 
 /*
@@ -111,7 +126,10 @@ void on_request(int clientfd) {
 void *handle_request(void *ptr) {
     /* detach itself, and passing argument for the file descriptor */
     Pthread_detach(Pthread_self());
-    const int fd = *((int *) ptr);
+    Params *p = (Params *) ptr;
+    const int fd = p->fd;
+    Cache *code_cache = p->code_cache;
+    pthread_rwlock_t *rwlock = p->rwlock;
     Free(ptr);
     struct stat sbuf;
     char buf[MAXLINE], method[MAXLINE], uri[MAXLINE], version[MAXLINE];
@@ -147,7 +165,7 @@ void *handle_request(void *ptr) {
                     clienterror(fd, filename, "403", "Forbidden",
                                 "Tiny couldn't run the CGI program");
                 } else {
-                    serve_dynamic(fd, filename, cgiargs);
+                    serve_dynamic(fd, filename, cgiargs, code_cache, rwlock);
                 }
             }
         }

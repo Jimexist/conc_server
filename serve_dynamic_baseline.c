@@ -3,7 +3,8 @@
 /*
  * serve_dynamic - run a CGI program on behalf of the client
  */
-void serve_dynamic(int fd, char *filename, char *cgiargs) {
+void serve_dynamic(int fd, char *filename, char *cgiargs, Cache *cache,
+                   pthread_rwlock_t *rwlock) {
     char buf[MAXLINE], *emptylist[] = {NULL};
 
     /* Return first part of HTTP response */

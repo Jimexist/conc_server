@@ -7,6 +7,4 @@
 #include "serve_static.h"
 #include "serve_dynamic.h"
 
-void serve_static(int fd, char *filename, int filesize);
-
 #endif

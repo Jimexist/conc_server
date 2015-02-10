@@ -14,6 +14,8 @@ int main(int argc, char **argv) {
     const int listenfd = Open_listenfd(port);
     struct sockaddr_in clientaddr;
 
+    server_init();
+
     while (1) {
         socklen_t clientlen = sizeof(clientaddr);
         int clientfd = Accept(listenfd, (SA *) &clientaddr, &clientlen);

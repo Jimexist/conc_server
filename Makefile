@@ -1,14 +1,14 @@
 CC=gcc
 CFLAGS=-O2 -Wall -Werror -fPIC -pedantic
 LDFLAGS=-O2 -Wall -Werror -fPIC -pedantic -lpthread
-COMMON=server.o csapp.o req_handler.o serve_static.o
+COMMON=server.o csapp.o req_handler.o serve_static.o code_cache.o
 
 all: format baseline optimized cgi
 
 baseline: serve_dynamic_baseline.o $(COMMON)
 	$(CC) $(LDFLAGS) -o $@ $^
 
-optimized: serve_dynamic_optimized.o code_cache.o $(COMMON)
+optimized: serve_dynamic_optimized.o $(COMMON)
 	$(CC) $(LDFLAGS) -ldl -o $@ $^
 
 cgi:
