@@ -11,45 +11,31 @@ class Suite:
     def __init__(self, conc_level, n_req):
         self.conc_level = conc_level
         self.n_req = n_req
-            
-    def parse_result(self, result):
-        req_count = re.search(r'.*Total: connections \d+ requests (\d+) replies \d+.*', result).group(1)
-        assert re.search(r'.*Reply status: 1xx=0 2xx={0} 3xx=0 4xx=0 5xx=0.*'\
-            .format(req_count), result), 'reply status count does not look right: ' + result
-        assert re.search(r'.*Errors: total 0 .*', result), 'Error occurred: ' + result
-        test_duration = re.search(r'.*test-duration ([\d.]+).*', result).group(1)
-        conn_rate = re.search(r'.*Connection rate: ([\d.]+).*', result).group(1)
-        return req_count, test_duration, conn_rate
     
     def run(self):
-        port = 8003
+        port = 10003
         for server in SERVERS:
             p = subprocess.Popen([server, str(port)])
             try:
                 output = subprocess.check_output([
-                    'httperf',
-                    '--hog',
-                    '--server', '127.0.0.1',
-                    '--port', str(port),
-                    '--wlog', 'y,wlog',
-                    '--num-conns', str(self.n_req),
+                    'ab',
+                    '-n', str(self.n_req),
+                    '-c', str(self.conc_level),
+                    '-l',
+                    '-r',
+                    '-e', '{0}_n{1}_c{2}_result.csv'.format(server[2:], self.n_req, self.conc_level),
+                    'http://{0}:{1}/cgi-bin/adder'.format('127.0.0.1', port),
                 ])
-                print self.parse_result(output)
+                print output
             finally:
                 p.terminate()
                 p.poll()
-            
-def write_wlog_file():
-    with open('wlog', 'w') as fout:
-        for p in CGI_PROGRAMS:
-            fout.write('/cgi-bin/' + p + '\0')
 
 def main():
-    write_wlog_file()
     for server in SERVERS:
         assert os.path.exists(server), 'build binaries first'
     
-    suite = Suite(500, 5000)
+    suite = Suite(10, 10000)
     suite.run()
     
 if __name__ == '__main__':
