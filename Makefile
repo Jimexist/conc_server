@@ -4,6 +4,9 @@ LDFLAGS=-O2 -Wall -Werror -fPIC -pedantic -lpthread
 COMMON=server.o csapp.o req_handler.o serve_static.o code_cache.o
 
 all: format baseline optimized cgi
+	
+test: all
+	./compare.py
 
 baseline: serve_dynamic_baseline.o $(COMMON)
 	$(CC) $(LDFLAGS) -o $@ $^
@@ -17,7 +20,7 @@ cgi:
 .PHONY: clean format
 
 clean:
-	-rm -f *.o baseline optimized *~
+	-rm -f *.o baseline optimized *~ wlog
 	(cd cgi-bin; make clean)
 
 format:
