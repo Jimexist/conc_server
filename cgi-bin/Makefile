@@ -1,7 +1,6 @@
 CC=gcc
-CFLAGS=-O2 -Wall -Werror -fPIC -pedantic
-DEBUGFLAGS=-O0
-LDFLAGS=-Wall
+CFLAGS=-O2 -Wall -Werror -fPIC -std=gnu99
+LDFLAGS=-O2 -Wall -pthread -lm
 
 EXE = adder multiplier sqrt rand time
 OBJS := $(patsubst %,%.o, $(EXE))
